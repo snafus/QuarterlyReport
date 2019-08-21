@@ -12,7 +12,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 def retrieve_csv(resourcesreporting, start_date, end_date, filename = "output"):
     url = 'https://bigpanda.cern.ch/api/grafana?table=completed&groupby=dst_experiment_site,error_category&field=sum_count&dst_cloud=UK&resourcesreporting' + resourcesreporting + '&date_from=' + start_date + '%2000:00:00&date_to=' + end_date + '%2000:00:00&export=csv'
     print("Reading from " + url)
-#    urllib.request.urlretrieve(url,filename+ '.csv')
+    urllib.request.urlretrieve(url,filename+ '.csv')
 
 
 #url = 'https://bigpanda.cern.ch/api/grafana?table=completed&groupby=dst_experiment_site,error_category&field=sum_count&dst_cloud=UK&resourcesreporting=' + jobtype + '&date_from=' + start_date + '%2000:00:00&date_to=' + end_date + '%2000:00:00&export=csv'
