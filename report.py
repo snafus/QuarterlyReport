@@ -51,7 +51,7 @@ def write_csv_line(site, tc, pe, gpe, output):
     if (tc.get(site,0) > 0):
         job_success = 1.0 - (pe.get(site,0)/tc.get(site,0))
         data_availability = 1.0 - (gpe.get(site,0)/tc.get(site,0))
-    output.write(", " + str(job_success) + "," + str(data_availability))
+    output.write(", " + str(round(job_success, 3)) + "," + str(round(data_availability, 3)))
     output.write("\n")
 
 
@@ -96,15 +96,16 @@ def analyse_csv(filename, start_date, end_date):
         #T2 totals
         for site in sites:
             if site!="RAL-LCG2":
-                total_completed["Total T2"] = total_completed.get("Total T2", 0) + int(row[2])
-                pilot_errors["Total T2"] = pilot_errors.get("Total T2", 0) + int(row[2])
-                get_put_errors["Total T2"] = get_put_errors.get("Total T2", 0) + int(row[2])
+                total_completed["Total T2"] = total_completed.get("Total T2", 0) + total_completed.get(site, 0)
+                pilot_errors["Total T2"] = pilot_errors.get("Total T2", 0) + pilot_errors.get(site, 0)
+                get_put_errors["Total T2"] = get_put_errors.get("Total T2", 0) + get_put_errors.get(site, 0)
+        print(total_completed["Total T2"])
 
 
 
     with open(filename + "_summed.csv", "w") as output:
         output.write(filename + " " + start_date + " - " + end_date + "\n")
-        output.write(", , Completed Jobs, Failed Jobs (Pilot), Failed Jobs (Get/Put), Job Success rate, Data Availability\n")
+        output.write(", Completed Jobs, Failed Jobs (Pilot), Failed Jobs (Get/Put), Job Success rate, Data Availability\n")
         write_csv_line("RAL-LCG2", total_completed, pilot_errors, get_put_errors, output)
         for fed in sorted(federations):
             for site in sites:
