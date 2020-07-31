@@ -10,7 +10,9 @@
 #  u'reason': u'Corrupted',
 #  u'rse': u'RAL-LCG2-ECHO_SCRATCHDISK'},
 
-
+import os,sys
+inputfile  = sys.argv[1] if len(sys.argv) > 1 else "dump.json"
+outputfile = ".".join(inputfile.strip().split("/")[-1].split(".")[:-1]) + ".tex"
 
 import json, pprint, warnings
 with warnings.catch_warnings():
@@ -25,7 +27,7 @@ sites = ["RAL-LCG2", "UKI-LT2-BRUNEL", "UKI-LT2-QMUL", "UKI-LT2-RHUL", "UKI-NORT
          "UKI-SOUTHGRID-OX-HEP", "UKI-SOUTHGRID-RALPP"
         ]
 
-with open('dump.json') as data_file:    
+with open(inputfile) as data_file:    
     data = json.load(data_file)
 
 records = []
@@ -51,3 +53,6 @@ for site in sites:
 
 df = DataFrame.from_records(records,index='Site')
 print(df.to_latex())
+with open(outputfile,'w') as f:
+    f.write(df.to_latex())
+
