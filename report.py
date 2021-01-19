@@ -13,27 +13,6 @@ def retrieve_csv(resourcesreporting, start_date, end_date, filename = "output"):
     print("Reading from " + url)
     urllib.request.urlretrieve(url,filename+ '.csv')
 
-federations = ['UKI-LT2', 'UKI-NORTHGRID', 'UKI-SCOTGRID', 'UKI-SOUTHGRID']
-sites = ['RAL-LCG2',
-#         'RAL-LCG2-ECHO',
-         'UKI-LT2-Brunel',
-         'UKI-LT2-IC-HEP',
-         'UKI-LT2-QMUL',
-         'UKI-LT2-RHUL',
-         'UKI-LT2-UCL-HEP',
-         'UKI-NORTHGRID-LANCS-HEP',
-         'UKI-NORTHGRID-LIV-HEP',
-         'UKI-NORTHGRID-MAN-HEP',
-         'UKI-NORTHGRID-SHEF-HEP',
-         'UKI-SCOTGRID-DURHAM',
-         'UKI-SCOTGRID-ECDF',
-#         'UKI-SCOTGRID-ECDF-RDF',
-         'UKI-SCOTGRID-GLASGOW',
-         'UKI-SOUTHGRID-BHAM-HEP',
-         'UKI-SOUTHGRID-CAM-HEP',
-         'UKI-SOUTHGRID-OX-HEP',
-         'UKI-SOUTHGRID-RALPP',
-         'UKI-SOUTHGRID-SUSX',]
 
 def site_name_special_case(site):
     if site == 'UKI-SCOTGRID-ECDF-RDF':
