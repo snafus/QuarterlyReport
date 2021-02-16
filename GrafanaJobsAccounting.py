@@ -19,9 +19,10 @@ headers['Accept'] = 'application/json'
 base = "https://monit-grafana.cern.ch"
 url = "api/datasources/proxy/9559/_msearch"
 
+print(headers)
 
-date_from = datetime.strptime('01.07.2020 00:00:00', '%d.%m.%Y %H:%M:%S')
-date_to =  datetime.strptime('01.10.2020 00:00:00', '%d.%m.%Y %H:%M:%S')
+date_from = datetime.strptime('01.10.2020 00:00:00', '%d.%m.%Y %H:%M:%S')
+date_to   = datetime.strptime('01.01.2021 00:00:00', '%d.%m.%Y %H:%M:%S')
 
 path = "./"
 filename = "uk_report"
