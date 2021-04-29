@@ -1,102 +1,54 @@
-# Generate Jobs accounting reports using Aleksendr script for ElasticSearch storage
-# Updates Stewart's script from original reporting
-
-# supply as input the two csv files:
-# python reportv2.py analysis.csv production.csv
-
-import sys,glob,re
-
-
-import uksites
 import pandas as pd
-from pandas import DataFrame,Series
+from datetime import datetime
+from json import loads
+import requests
+from requests import post
 
-def csv_to_df(csvfname):
-    df = pd.read_csv(csvfname)
+headers = {}
+path = "./"
+filename = "report"
+date_from =  '01.02.2021'  #datetime.strptime('01.07.2020 00:00:00', '%d.%m.%Y %H:%M:%S')
+date_to   =  '08.02.2021'  #datetime.strptime('01.10.2020 00:00:00', '%d.%m.%Y %H:%M:%S')
 
-    sites = list(df.site.unique())
+#url_production = 'https://bigpanda.cern.ch/api/grafana?table=completed&groupby=dst_experiment_site,error_category&field=sum_count&jobstatus=finished%7Cfailed%7Ccancelled&resourcesreporting=Data%20Calib%5C%2FMonit%7CData%20Processing%7CEvent%20Index%7CGroup%20Production%7CMC%20Reconstruction%7CMC%20Simulation%7COthers&date_from={}%0000:00:01&date_to={}%0000:00:01&export=csv'.format(date_from, date_to)
 
-    re_getput = re.compile('Get error|get error|Put error|put error')
-    re_pilot  = re.compile('^Pilot')
-    noerror = 'No Error'
-    getput_errors = [x for x in df['error'].unique() if re_getput.search(x)]
-    pilot_errors  = [x for x in df['error'].unique() if re_pilot .search(x)]
-    other_errors = [x for x in df['error'].unique() if ((x not in getput_errors) and (x not in pilot_errors)  and  (x != noerror)) ]
+url_analysis = 'https://bigpanda.cern.ch/api/grafana?table=completed&groupby=dst_experiment_site,error_category&field=sum_count&jobstatus=finished%7Cfailed%7Ccancelled&resourcesreporting=Analysis&date_from={}%0000:00:01&date_to={}%0000:00:01&export=csv'.format(date_from, date_to)
 
-    raw = {}
-    for site in sites:
-        df_site = df[df['site'] == site]
-        completed = float(df_site[df_site['error'] == 'No Error'].value)
-        get_put   = float(df_site[df_site.error.isin(getput_errors)].value.sum())
-        pilot     = float(df_site[df_site.error.isin(pilot_errors) ].value.sum())
-        other     = float(df_site[df_site.error.isin(other_errors) ].value.sum())
-        #raw[site] = {'Completed':completed, 'Pilot Error':pilot, 'Get/Put Error':get_put,'Other Errors':other}
-        raw[site] = {'Completed':completed, 'Pilot Error':pilot, 'Get/Put Error':get_put}
+def run_query(query):
+    report = []
 
-    df2 = DataFrame.from_dict(raw).transpose().sort_index()
-    df2['Success Rate']      = df2['Completed'] / (df2['Completed'] + df2['Get/Put Error'] + df2['Pilot Error'])
-    df2['Data availability'] = df2['Completed'] / (df2['Completed'] + df2['Get/Put Error'])
-    return df2
-
-
-dfa = None
-dfp = None
-
-def build_summary_df(df):
-    dftmp = df.copy().transpose()
-    df2   =  dftmp.get('RAL-LCG2',0)
-    df_t2 = None
-    for site in uksites.accountable_sites_t2:
-        if df_t2 is None:
-            df_t2 = dftmp.get(site,0)
-        else:
-            df_t2 += dftmp.get(site,0)
-    df_all = df2 + df_t2
-    df_out = pd.concat([df2,df_t2,df_all],axis=1)
-    df_out.columns = ['RAL-LCG2','Tier-2s','Total']
-    df_out = df_out.transpose()
-    df_out['Success Rate']      = df_out['Completed'] / (df_out['Completed'] + df_out['Get/Put Error'] + df_out['Pilot Error'])
-    df_out['Data availability'] = df_out['Completed'] / (df_out['Completed'] + df_out['Get/Put Error'])
-    return df_out
-
-def build_combined_summary(df_ana,df_prod):
-    df2 = df_ana + df_prod
-    df2['Success Rate']      = df2['Completed'] / (df2['Completed'] + df2['Get/Put Error'] + df2['Pilot Error'])
-    df2['Data availability'] = df2['Completed'] / (df2['Completed'] + df2['Get/Put Error'])
-    return df2
-
-
-def main():
-    analysis   = sys.argv[1]
-    production = sys.argv[2]
-
-    df_analysis = csv_to_df(analysis)
-    df_prod     = csv_to_df(production)
-    df_analysis.index.name = "Analysis"
-    df_prod    .index.name = "Production"
-    print(df_analysis)
-    print(df_prod)
-
-    df_analysis_summary = build_summary_df(df_analysis)
-    df_prod_summary     = build_summary_df(df_prod)
-    df_analysis_summary.index.name = "Analysis"
-    df_prod_summary    .index.name = "Production"
-    print(df_analysis_summary)
-    print(df_prod_summary)
-
-    df_analysis.to_csv("analysis.csv")
-    df_analysis_summary.to_csv("analysis_summary.csv")
-    df_prod.to_csv("production.csv")
-    df_prod_summary.to_csv("production_summed.csv")
+    r = requests.get(query)
     
-    df_comb =  build_combined_summary(df_analysis_summary, df_prod_summary )
-    df_comb.index.name = "Combined"
-    print(df_comb)
-    df_comb.to_csv("combined.csv")
+    if r.ok:
+        q = r.json()
+        sites = [x['key'] for x in q['dst_experiment_site']['buckets']]
 
+        for site_data in [x for x in q['dst_experiment_site']['buckets']]:
+            site_name = site_data['key']
+            errors = site_data['error_category']['buckets']
+            for error in errors:
+                error_name  = error['key']
+                error_count =  float(error['sum_count']['value'])
+                report.append({'site': site_name, 'error': error_name, 'value': int(error_count)})
 
-if __name__ == "__main__":
-    main()
+        # sites = loads(r.text)['responses'][0]['aggregations']['sites']['buckets']
+        # for site in sites:
+        #     errors = site['errors']['buckets']
+        #     for error in errors:
+        #         report.append({'site': site['key'], 'error': error['key'], 'value': int(error['nerrors']['value'])})
+    else:
+        print(r.status_code)
+        print(r.text)
+        r.raise_for_status()
+
+    df = pd.DataFrame(report)
+    return df, sites
+
+df_analysis, s1 = run_query(url_analysis)
+#df_production, s2 = run_query(url_production)
+
+df_analysis  .to_csv('{0}/{1}_analysis_.csv'  .format(path, filename))
+#df_production.to_csv('{0}/{1}_production_.csv'.format(path, filename))
 
 
 
